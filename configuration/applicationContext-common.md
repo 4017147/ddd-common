@@ -51,6 +51,8 @@
 		<property name="password" value="${rabbitmq.password}"></property>
 		<!-- rabbitmq virtual host -->
 		<property name="virtualHost" value="${rabbitmq.virtualHost}"></property>
+		<!-- rabbitmq cfg domainName -->
+		<property name="domainName" value="${ddd-cfg.domainName}"></property>
 	</bean>
 
 	<!--消息事件发布者 -->
@@ -75,7 +77,6 @@
 	
 	<!--事件通知调度服务 -->
 	<bean class="cn.mljia.ddd.common.port.adapter.instantiation.InstantiationTracingProcessor">
-		<property name="threadPoolTaskExecutor" ref="threadPoolTaskExecutor"></property>
 		<property name="notificationApplicationService" ref="notificationApplicationService"></property>
 		<property name="lock" ref="jedisLock"></property>
 		<property name="scanPackage" value="cn.mljia"></property>
@@ -86,27 +87,6 @@
 	<!-- RabbitMQ 连接工厂 -->    
     <bean id="connectionFactory" class="com.rabbitmq.client.ConnectionFactory" scope="singleton"/>
     
-    <!-- NotificationTrackerExecutor -->
-    <bean id="threadPoolTaskExecutor"   class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
-	        <!-- 核心线程数，默认为1 -->
-	        <property name="corePoolSize" value="10" />
-	        <!-- 最大线程数，默认为Integer.MAX_VALUE -->
-	        <property name="maxPoolSize" value="50" />
-	        <!-- 队列最大长度，一般需要设置值>=notifyScheduledMainExecutor.maxNum；默认为Integer.MAX_VALUE
-	            <property name="queueCapacity" value="1000" /> -->
-	        <!-- 线程池维护线程所允许的空闲时间，默认为60s -->
-	        <property name="keepAliveSeconds" value="300" />
-	        <!-- 线程池对拒绝任务（无线程可用）的处理策略，目前只支持AbortPolicy、CallerRunsPolicy；默认为后者 -->
-	        <property name="rejectedExecutionHandler">
-	            <!-- AbortPolicy:直接抛出java.util.concurrent.RejectedExecutionException异常 -->
-	            <!-- CallerRunsPolicy:主线程直接执行该任务，执行完之后尝试添加下一个任务到线程池中，可以有效降低向线程池内添加任务的速度 -->
-	            <!-- DiscardOldestPolicy:抛弃旧的任务、暂不支持；会导致被丢弃的任务无法再次被执行 -->
-	            <!-- DiscardPolicy:抛弃当前任务、暂不支持；会导致被丢弃的任务无法再次被执行 -->
-	            <bean class="java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy" />
-	        </property>
-	        <property name="threadNamePrefix" value="domain_event_tracker_"></property>
-	</bean>
-
 
 	<bean id="commonConfiguration" class="cn.mljia.ddd.common.application.configuration.CommonConfiguration">
 		<property name="domainName" value="${ddd-cfg.domainName}"></property>

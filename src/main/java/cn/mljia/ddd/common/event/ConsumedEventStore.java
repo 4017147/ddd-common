@@ -13,7 +13,7 @@ public interface ConsumedEventStore {
 	 * @throws Exception
 	 * @return: boolean
 	 */
-	public boolean isDealWithEvent(long eventId, String typeName) throws Exception;
+	public boolean isDealWithEvent(long eventId, String typeName,String receiveName) throws Exception;
 
 	/**
 	 * 
@@ -25,5 +25,5 @@ public interface ConsumedEventStore {
 	 * @throws Exception
 	 * @return: boolean
 	 */
-	public ConsumedEvent append(long eventId, String typeName) throws Exception;
+	public ConsumedEvent append(long eventId, String typeName,String receiveName) throws Exception;
 }

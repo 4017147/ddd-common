@@ -45,7 +45,8 @@ CREATE TABLE `tb_stored_event` (
 DROP TABLE IF EXISTS `tb_consumed_event_store`;
 CREATE TABLE `tb_consumed_event_store` (
   `event_id` int(11) NOT NULL,
-  `type_name` varchar(200) DEFAULT NULL COMMENT '事件类型',
-  PRIMARY KEY (`event_id`),
-  KEY `event_type_name_index` (`event_id`,`type_name`)
+  `type_name` varchar(200) NOT NULL,
+  `receive_name` varchar(255) NOT NULL,
+  UNIQUE KEY `event_type_name_index_unique` (`event_id`,`type_name`,`receive_name`),
+  KEY `event_type_name_index` (`event_id`,`type_name`,`receive_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

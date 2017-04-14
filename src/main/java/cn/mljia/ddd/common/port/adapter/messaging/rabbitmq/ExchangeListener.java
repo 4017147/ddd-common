@@ -17,6 +17,7 @@ package cn.mljia.ddd.common.port.adapter.messaging.rabbitmq;
 import java.util.Date;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 import org.springframework.orm.hibernate4.HibernateTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -34,6 +35,8 @@ import cn.mljia.ddd.common.notification.NotificationReader;
  */
 public abstract class ExchangeListener extends AssertionConcern {
 
+    private static Logger logger =Logger.getLogger(ExchangeListener.class);
+    
 	private MessageConsumer messageConsumer;
 
 	private Queue queue;
@@ -111,7 +114,7 @@ public abstract class ExchangeListener extends AssertionConcern {
         		rabbitmqConfiguration().getVirtualHost(),
         		rabbitmqConfiguration().getUsername(), rabbitmqConfiguration().getPassword()), this.exchangeName(), true);
 
-		this.queue = Queue.individualExchangeSubscriberInstance(exchange, this.exchangeName() + "." + this.queueName());
+		this.queue = Queue.individualExchangeSubscriberInstance(exchange,"queue."+this.rabbitmqConfiguration().getDomainName() + "." + this.exchangeName() + "." + this.queueName());
 	}
 
 	/**
@@ -127,8 +130,10 @@ public abstract class ExchangeListener extends AssertionConcern {
 	 * Registers my listener for queue messages and dispatching.
 	 */
 	private void registerConsumer() {
-		this.messageConsumer = MessageConsumer.instance(this.queue(), false);
-
+	   final String receiveName="queue."+this.rabbitmqConfiguration().getDomainName() + "." + this.exchangeName() + "." + this.queueName();
+	    
+	    this.messageConsumer = MessageConsumer.instance(this.queue(), false);
+		
 		this.messageConsumer.receiveOnly(this.listensTo(), new MessageListener(MessageListener.Type.TEXT) {
 
 			@Override
@@ -139,16 +144,18 @@ public abstract class ExchangeListener extends AssertionConcern {
 					TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
 					TransactionStatus status = hibernateTransactionManager().getTransaction(transactionDefinition);
 					try {
-						boolean isDealWith = consumedEventStore().isDealWithEvent(notificationId, aType);
+						boolean isDealWith = consumedEventStore().isDealWithEvent(notificationId, aType,receiveName);
 						if (!isDealWith) {
 							filteredDispatch(aType, aTextMessage);
-							consumedEventStore().append(notificationId, aType);
+							consumedEventStore().append(notificationId, aType,receiveName);
 							hibernateTransactionManager().commit(status);
 						} else {
 							hibernateTransactionManager().rollback(status);
+							logger.warn("handleMessage porcess message is consumed with notificationId=====>>>"+notificationId);
 						}
 					} catch (Exception e) {
 						hibernateTransactionManager().rollback(status);
+						logger.error("handleMessage porcess Exception e:======>>>"+e.getMessage(),e);
 						throw e;
 					}
 				}
