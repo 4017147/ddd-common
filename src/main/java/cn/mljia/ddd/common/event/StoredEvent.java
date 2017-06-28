@@ -46,6 +46,8 @@ public class StoredEvent extends AssertionConcern {
 	private String typeName;
 	@Column(name = "tracker_name", nullable = false, length = 50)
 	private String trackerName;
+	@Column(name = "send_status", nullable = false, length = 1)
+	private Integer sendStatus;
 	
 	public StoredEvent(String trackerName,String aTypeName, Date anOccurredOn, String anEventBody) {
 		this();
@@ -54,12 +56,14 @@ public class StoredEvent extends AssertionConcern {
 		this.setEventBody(anEventBody);
 		this.setOccurredOn(anOccurredOn);
 		this.setTypeName(aTypeName);
+		this.setSendStatus(0);
 	}
 
-	public StoredEvent(String trackerName,String aTypeName, Date anOccurredOn, String anEventBody, long anEventId) {
+	public StoredEvent(String trackerName,String aTypeName, Date anOccurredOn, String anEventBody, long anEventId,Integer sendStatus) {
 		this(trackerName,aTypeName, anOccurredOn, anEventBody);
 
 		this.setEventId(anEventId);
+		this.setSendStatus(sendStatus);
 	}
 
 	public String eventBody() {
@@ -148,6 +152,11 @@ public class StoredEvent extends AssertionConcern {
 	protected void setTrackerName(String trackerName) {
 		this.assertArgumentNotEmpty(trackerName, "The event tracker name is required.");
 		this.trackerName = trackerName;
+	}
+
+	public void setSendStatus(Integer sendStatus) {
+		this.assertArgumentNotNull(sendStatus, "The event send status is required.");
+		this.sendStatus = sendStatus;
 	}
 	
 	 

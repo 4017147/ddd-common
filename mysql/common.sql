@@ -36,9 +36,10 @@ CREATE TABLE `tb_stored_event` (
   `event_body` varchar(5000) DEFAULT NULL COMMENT ' 事件内容',
   `occurred_on` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '事件创建时间',
   `type_name` varchar(200) DEFAULT NULL COMMENT ' 事件类型',
-  `tracker_name` varchar(50) NOT NULL COMMENT ' 跟踪器名称',
+  `tracker_name` varchar(70) NOT NULL COMMENT ' 跟踪器名称',
+  `send_status` int(1) DEFAULT '0' COMMENT '事件发送状态(0:待发送,1:已发送)',
   PRIMARY KEY (`event_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='领域事件存储表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='领域事件存储表';
 -- ----------------------------
 -- Table structure for tb_consumed_event_store
 -- ----------------------------
@@ -50,3 +51,4 @@ CREATE TABLE `tb_consumed_event_store` (
   UNIQUE KEY `event_type_name_index_unique` (`event_id`,`type_name`,`receive_name`),
   KEY `event_type_name_index` (`event_id`,`type_name`,`receive_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+

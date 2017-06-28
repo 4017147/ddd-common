@@ -66,6 +66,7 @@ public class HibernatePublishedNotificationTrackerStore
                     (PublishedNotificationTracker) query.uniqueResult();
         } catch (Exception e) {
             // fall through
+        	throw e;
         }
 
         if (publishedNotificationTracker == null) {

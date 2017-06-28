@@ -135,6 +135,7 @@ public abstract class BrokerChannel {
 		}
 		return addressArr;
 	}
+	
     /**
      * Constructs my default state.
      * @param aBrokerChannel the BrokerChannel to initialize with
@@ -323,6 +324,18 @@ public abstract class BrokerChannel {
         return this.connection;
     }
 
+    protected void closeConnection() {
+         try
+        {
+            this.connection.close();
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    
     /**
      * Sets my connection.
      * @param aConnection the Connection to set as my connection

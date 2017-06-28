@@ -24,8 +24,10 @@ public interface EventStore {
 
     public List<StoredEvent> allStoredEventsSince(long aStoredEventId);
     
-    public List<StoredEvent> allStoredEventsSince(long aStoredEventId,String trackerName);
+    public List<StoredEvent> allStoredEventsSince(long aStoredEventId,String trackerName,Integer limit);
 
+    public List<StoredEvent> compensationStoredEvents(long aStoredEventId,String trackerName,Integer limit);
+    
     public StoredEvent append(DomainEvent aDomainEvent);
 
     public void close();
@@ -33,4 +35,6 @@ public interface EventStore {
     public long countStoredEvents();
     
     public String trackerName();
+    
+    public Integer complete(Long[] eventIds);
 }

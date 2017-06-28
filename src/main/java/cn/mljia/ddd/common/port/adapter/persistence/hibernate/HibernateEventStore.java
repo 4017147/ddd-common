@@ -22,6 +22,7 @@ import cn.mljia.ddd.common.domain.model.DomainEvent;
 import cn.mljia.ddd.common.event.EventSerializer;
 import cn.mljia.ddd.common.event.EventStore;
 import cn.mljia.ddd.common.event.StoredEvent;
+import cn.mljia.ddd.common.media.SqlConfig;
 import cn.mljia.ddd.common.persistence.PersistenceManagerProvider;
 
 public class HibernateEventStore extends AbstractHibernateSession implements EventStore
@@ -86,20 +87,36 @@ public class HibernateEventStore extends AbstractHibernateSession implements Eve
     
     @Override
     @SuppressWarnings("unchecked")
-    public List<StoredEvent> allStoredEventsSince(long aStoredEventId, String trackerName)
+    public List<StoredEvent> allStoredEventsSince(long aStoredEventId, String trackerName,Integer limit)
     {
+
         Query query =
             this.session().createQuery("from StoredEvent as _obj_ "
                 + "where _obj_.trackerName=? and _obj_.eventId > ? " + "order by _obj_.eventId");
         
         query.setParameter(0, trackerName);
         query.setParameter(1, aStoredEventId);
-        query.setMaxResults(LIMIT); // 相当于sql语句中的查询数量
+        query.setMaxResults((limit!=null)?limit:SqlConfig.LIMIT); // 相当于sql语句中的查询数量
         query.setFirstResult(0); // 相当于sql语句中的开始索引
         List<StoredEvent> storedEvents = query.list();
         
         return storedEvents;
     }
+    
+    public List<StoredEvent> compensationStoredEvents(long aStoredEventId, String trackerName,Integer limit){
+    	Query query =
+                this.session().createQuery("from StoredEvent as _obj_ "
+                    + "where _obj_.trackerName=? and _obj_.eventId < ?  and _obj_.sendStatus =?  order by _obj_.eventId");
+            
+        query.setParameter(0, trackerName);
+        query.setParameter(1, aStoredEventId);
+        query.setParameter(2, 0);
+        query.setMaxResults(limit); // 相当于sql语句中的查询数量
+        query.setFirstResult(0); // 相当于sql语句中的开始索引
+        List<StoredEvent> storedEvents = query.list();
+        return storedEvents;
+    }
+    
     
     @Override
     public StoredEvent append(DomainEvent aDomainEvent)
@@ -136,6 +153,14 @@ public class HibernateEventStore extends AbstractHibernateSession implements Eve
     {
         return trackerName;
     }
+
+	@Override
+	public Integer complete(Long[] eventIds) {
+		String sql=" update tb_stored_event SET send_status =1  WHERE event_id IN(:eventIds) ";
+		Query query=this.session().createSQLQuery(sql);
+		query.setParameterList("eventIds", eventIds);
+		return query.executeUpdate();
+	}
     
    
     

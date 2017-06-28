@@ -94,7 +94,7 @@ public class ActiveMQNotificationPublisher implements NotificationPublisher {
 	private List<Notification> listUnpublishedNotifications(
 			long aMostRecentPublishedMessageId) {
 		List<StoredEvent> storedEvents = this.eventStore()
-				.allStoredEventsSince(aMostRecentPublishedMessageId,"");
+				.allStoredEventsSince(aMostRecentPublishedMessageId,"",null);
 
 		List<Notification> notifications = this.notificationsFrom(storedEvents);
 

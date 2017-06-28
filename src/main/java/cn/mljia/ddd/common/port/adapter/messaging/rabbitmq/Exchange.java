@@ -15,6 +15,9 @@
 package cn.mljia.ddd.common.port.adapter.messaging.rabbitmq;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
+import org.apache.commons.lang.StringUtils;
 
 import cn.mljia.ddd.common.port.adapter.messaging.MessageException;
 
@@ -192,5 +195,34 @@ public class Exchange extends BrokerChannel {
      */
     private void setType(String aType) {
         this.type = aType;
+    }
+    
+    
+    /**
+     * Answers a new instance of a fan-out Exchange with the name aName. The
+     * underlying exchange has the isDurable quality, and is not auto-deleted.
+     * @param aConnectionSettings the ConnectionSettings
+     * @param aName the String name of the exchange
+     * @param isDurable the boolean indicating whether or not I am durable
+     * @return Exchange
+     */
+    public static void exchangesFanoutDeclare(ConnectionSettings aConnectionSettings,String[] exchangeNames,
+            boolean isDurable) {
+        for (int i = 0, length = exchangeNames.length; i < length; i++)
+        {
+            try
+            {
+                if(StringUtils.isNotBlank(exchangeNames[i])&&StringUtils.isNotEmpty(exchangeNames[i])){
+                    Exchange exchange= new Exchange(aConnectionSettings, exchangeNames[i], "fanout", isDurable);
+                    exchange.channel().close();
+                    exchange.closeConnection();
+                }
+            }
+            catch (IOException | TimeoutException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
 }

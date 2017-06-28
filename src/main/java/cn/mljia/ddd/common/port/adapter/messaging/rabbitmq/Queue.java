@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import cn.mljia.ddd.common.port.adapter.messaging.Exchanges;
 import cn.mljia.ddd.common.port.adapter.messaging.MessageException;
 import cn.mljia.ddd.common.port.adapter.messaging.RoutingKeys;
@@ -323,6 +325,44 @@ public class Queue extends BrokerChannel {
         }
     }
 
+    
+    /**
+     * Answers a new instance of a Queue that is bound to anExchange, and
+     * is ready to participate as an exchange subscriber (pub/sub). The
+     * connection and channel of anExchange are reused. The Queue is
+     * named by aName, which must be provided and should be unique to the
+     * individual subscriber. The Queue is durable, non-exclusive, and
+     * is not auto-deleted. This Queue style best works as a durable
+     * fan-out exchange subscriber.
+     * @param anExchange the Exchange to bind with the new Queue
+     * @param aName the String name of the queue, which must be unique, non-empty
+     * @return Queue
+     */
+    public static Queue individualExchangeSubscriberInstance(ConsumeBrokerChannel consumeBrokerChannel,
+            String aName,String[] exchangeNames) {
+
+        if (aName == null || aName.isEmpty()) {
+            throw new IllegalArgumentException("An individual subscriber must be named.");
+        }
+
+        Queue queue = new Queue(consumeBrokerChannel, aName, true, false, false);
+
+        try {
+            for (int i = 0, length = exchangeNames.length; i < length; i++)
+            {
+                if(StringUtils.isNotBlank(exchangeNames[i])&&StringUtils.isNotEmpty(exchangeNames[i])){
+                    queue.channel().queueBind(queue.name(), exchangeNames[i], "");
+                }
+            }
+        } catch (IOException e) {
+            throw new MessageException("Failed to bind the queue and exchange.", e);
+        }
+
+        return queue;
+    }
+    
+    
+    
     /**
      * @see cn.mljia.ddd.common.port.adapter.messaging.rabbitmq.BrokerChannel#isQueue()
      */

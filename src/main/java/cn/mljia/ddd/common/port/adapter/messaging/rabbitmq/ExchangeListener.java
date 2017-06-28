@@ -29,165 +29,202 @@ import cn.mljia.ddd.common.event.ConsumedEventStore;
 import cn.mljia.ddd.common.notification.NotificationReader;
 
 /**
- * I am an abstract base class for exchange listeners. I perform the basic set up according to the answers from my concrete subclass.
+ * I am an abstract base class for exchange listeners. I perform the basic set up according to the answers from my
+ * concrete subclass.
  *
  * @author Vaughn Vernon
  */
-public abstract class ExchangeListener extends AssertionConcern {
-
-    private static Logger logger =Logger.getLogger(ExchangeListener.class);
+public abstract class ExchangeListener extends AssertionConcern
+{
     
-	private MessageConsumer messageConsumer;
-
-	private Queue queue;
-
-	private RabbitmqConfiguration rabbitmqConfiguration;
-
-	private HibernateTransactionManager hibernateTransactionManager;
-
-	private ConsumedEventStore consumedEventStore;
-
-	/**
-	 * Constructs my default state.
-	 */
-	public ExchangeListener(RabbitmqConfiguration rabbitmqConfiguration, HibernateTransactionManager hibernateTransactionManager, ConsumedEventStore consumedEventStore) {
-		super();
-
-		this.setRabbitmqConfiguration(rabbitmqConfiguration);
-
-		this.setHibernateTransactionManager(hibernateTransactionManager);
-
-		this.setConsumedEventStore(consumedEventStore);
-		
-		this.attachToQueue();
-
-		this.registerConsumer();
-
-	}
-
-	/**
-	 * Closes my queue.
-	 */
-	public void close() {
-		this.queue().close();
-	}
-
-	/**
-	 * Answers the String name of the exchange I listen to.
-	 * 
-	 * @return String
-	 */
-	protected abstract String exchangeName();
-
-	/**
-	 * Filters out unwanted events and dispatches ones of interest.
-	 * 
-	 * @param aType
-	 *            the String message type
-	 * @param aTextMessage
-	 *            the String raw text message being handled
-	 */
-	protected abstract void filteredDispatch(String aType, String aTextMessage) throws Exception;
-
-	/**
-	 * Answers the kinds of messages I listen to.
-	 * 
-	 * @return String[]
-	 */
-	protected abstract String[] listensTo();
-
-	/**
-	 * Answers the String name of the queue I listen to. By default it is the simple name of my concrete class. May be overridden to change the name.
-	 * 
-	 * @return String
-	 */
-	protected String queueName() {
-		return this.getClass().getSimpleName();
-	}
-
-	/**
-	 * Attaches to the queues I listen to for messages.
-	 */
-	private void attachToQueue() {
-		// creates my exchange if non-existing
-		Exchange exchange = Exchange.fanOutInstance(ConnectionSettings.instance(rabbitmqConfiguration().getAddress(),
-        		rabbitmqConfiguration().getVirtualHost(),
-        		rabbitmqConfiguration().getUsername(), rabbitmqConfiguration().getPassword()), this.exchangeName(), true);
-
-		this.queue = Queue.individualExchangeSubscriberInstance(exchange,"queue."+this.rabbitmqConfiguration().getDomainName() + "." + this.exchangeName() + "." + this.queueName());
-	}
-
-	/**
-	 * Answers my queue.
-	 * 
-	 * @return Queue
-	 */
-	private Queue queue() {
-		return this.queue;
-	}
-
-	/**
-	 * Registers my listener for queue messages and dispatching.
-	 */
-	private void registerConsumer() {
-	   final String receiveName="queue."+this.rabbitmqConfiguration().getDomainName() + "." + this.exchangeName() + "." + this.queueName();
-	    
-	    this.messageConsumer = MessageConsumer.instance(this.queue(), false);
-		
-		this.messageConsumer.receiveOnly(this.listensTo(), new MessageListener(MessageListener.Type.TEXT) {
-
-			@Override
-			public void handleMessage(String aType, String aMessageId, Date aTimestamp, String aTextMessage, long aDeliveryTag, boolean isRedelivery) throws Exception {
-				if (StringUtils.isNotEmpty(aTextMessage) && StringUtils.isNotEmpty(aType)) {
-					NotificationReader notificationReader = new NotificationReader(aTextMessage);
-					long notificationId = notificationReader.notificationId();
-					TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
-					TransactionStatus status = hibernateTransactionManager().getTransaction(transactionDefinition);
-					try {
-						boolean isDealWith = consumedEventStore().isDealWithEvent(notificationId, aType,receiveName);
-						if (!isDealWith) {
-							filteredDispatch(aType, aTextMessage);
-							consumedEventStore().append(notificationId, aType,receiveName);
-							hibernateTransactionManager().commit(status);
-						} else {
-							hibernateTransactionManager().rollback(status);
-							logger.warn("handleMessage porcess message is consumed with notificationId=====>>>"+notificationId);
-						}
-					} catch (Exception e) {
-						hibernateTransactionManager().rollback(status);
-						logger.error("handleMessage porcess Exception e:======>>>"+e.getMessage(),e);
-						throw e;
-					}
-				}
-			}
-		});
-	}
-
-	private RabbitmqConfiguration rabbitmqConfiguration() {
-		return rabbitmqConfiguration;
-	}
-
-	private void setRabbitmqConfiguration(RabbitmqConfiguration rabbitmqConfiguration) {
-		assertArgumentNotNull(rabbitmqConfiguration, "rabbitmq configuration is must be requird.");
-		this.rabbitmqConfiguration = rabbitmqConfiguration;
-	}
-
-	private HibernateTransactionManager hibernateTransactionManager() {
-		return hibernateTransactionManager;
-	}
-
-	private void setHibernateTransactionManager(HibernateTransactionManager hibernateTransactionManager) {
-		assertArgumentNotNull(hibernateTransactionManager, "rabbitmq hibernateTransaction is must be requird.");
-		this.hibernateTransactionManager = hibernateTransactionManager;
-	}
-
-	private ConsumedEventStore consumedEventStore() {
-		return consumedEventStore;
-	}
-
-	private void setConsumedEventStore(ConsumedEventStore consumedEventStore) {
-		assertArgumentNotNull(consumedEventStore, "rabbitmq consumedEventStore is must be requird.");
-		this.consumedEventStore = consumedEventStore;
-	}
-
+    private static Logger logger = Logger.getLogger(ExchangeListener.class);
+    
+    private MessageConsumer messageConsumer;
+    
+    private Queue queue;
+    
+    private RabbitmqConfiguration rabbitmqConfiguration;
+    
+    private HibernateTransactionManager hibernateTransactionManager;
+    
+    private ConsumedEventStore consumedEventStore;
+    
+    /**
+     * Constructs my default state.
+     */
+    public ExchangeListener(RabbitmqConfiguration rabbitmqConfiguration,
+        HibernateTransactionManager hibernateTransactionManager, ConsumedEventStore consumedEventStore)
+    {
+        super();
+        
+        this.setRabbitmqConfiguration(rabbitmqConfiguration);
+        
+        this.setHibernateTransactionManager(hibernateTransactionManager);
+        
+        this.setConsumedEventStore(consumedEventStore);
+        
+        this.attachToQueue();
+        
+        this.registerConsumer();
+        
+    }
+    
+    /**
+     * Closes my queue.
+     */
+    public void close()
+    {
+        this.queue().close();
+    }
+    
+    /**
+     * Answers the String name of the exchange I listen to.
+     * 
+     * @return String
+     */
+    protected abstract String packageName();
+    
+    /**
+     * Filters out unwanted events and dispatches ones of interest.
+     * 
+     * @param aType the String message type
+     * @param aTextMessage the String raw text message being handled
+     */
+    protected abstract void filteredDispatch(String aType, String aTextMessage)
+        throws Exception;
+    
+    /**
+     * Answers the kinds of messages I listen to.
+     * 
+     * @return String[]
+     */
+    protected abstract String[] listensTo();
+    
+    /**
+     * Answers the String name of the queue I listen to. By default it is the simple name of my concrete class. May be
+     * overridden to change the name.
+     * 
+     * @return String
+     */
+    protected String queueName()
+    {
+        return this.getClass().getSimpleName();
+    }
+    
+    /**
+     * Attaches to the queues I listen to for messages.
+     */
+    private void attachToQueue()
+    {
+        // creates my ConsumeBrokerChannel if non-existing
+        
+        Exchange.exchangesFanoutDeclare(ConnectionSettings.instance(rabbitmqConfiguration().getAddress(),
+            rabbitmqConfiguration().getVirtualHost(),
+            rabbitmqConfiguration().getUsername(), rabbitmqConfiguration().getPassword()),this.listensTo(), true);
+        
+        ConsumeBrokerChannel channel =
+            ConsumeBrokerChannel.instance(ConnectionSettings.instance(rabbitmqConfiguration().getAddress(),
+                rabbitmqConfiguration().getVirtualHost(),
+                rabbitmqConfiguration().getUsername(),
+                rabbitmqConfiguration().getPassword()));
+        
+        this.queue =
+            Queue.individualExchangeSubscriberInstance(channel, "queue." + this.rabbitmqConfiguration().getDomainName()
+                + "." + this.packageName() + "." + this.queueName(), this.listensTo());
+    }
+    
+    /**
+     * Answers my queue.
+     * 
+     * @return Queue
+     */
+    private Queue queue()
+    {
+        return this.queue;
+    }
+    
+    /**
+     * Registers my listener for queue messages and dispatching.
+     */
+    private void registerConsumer()
+    {
+        final String receiveName =
+            "queue." + this.rabbitmqConfiguration().getDomainName() + "." + this.packageName() + "." + this.queueName();
+        
+        this.messageConsumer = MessageConsumer.instance(this.queue(), false);
+        
+        this.messageConsumer.receiveOnly(this.listensTo(), new MessageListener(MessageListener.Type.TEXT)
+        {
+            
+            @Override
+            public void handleMessage(String aType, String aMessageId, Date aTimestamp, String aTextMessage,
+                long aDeliveryTag, boolean isRedelivery)
+                throws Exception
+            {
+                if (StringUtils.isNotEmpty(aTextMessage) && StringUtils.isNotEmpty(aType))
+                {
+                    NotificationReader notificationReader = new NotificationReader(aTextMessage);
+                    long notificationId = notificationReader.notificationId();
+                    logger.warn("ready handleMessage type:"+aType+"========notificationId:"+notificationId);
+                    TransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+                    TransactionStatus status = hibernateTransactionManager().getTransaction(transactionDefinition);
+                    try
+                    {
+                        boolean isDealWith = consumedEventStore().isDealWithEvent(notificationId, aType, receiveName);
+                        if (!isDealWith)
+                        {
+                            filteredDispatch(aType, aTextMessage);
+                            consumedEventStore().append(notificationId, aType, receiveName);
+                            hibernateTransactionManager().commit(status);
+                        }
+                        else
+                        {
+                            hibernateTransactionManager().rollback(status);
+                            logger.warn("handleMessage rollback with consumed notificationId=====>>>" + notificationId);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        hibernateTransactionManager().rollback(status);
+                        logger.error("handleMessage rollback Exception e:======>>>" + e.getMessage(), e);
+                        throw e;
+                    }
+                }
+            }
+        });
+    }
+    
+    private RabbitmqConfiguration rabbitmqConfiguration()
+    {
+        return rabbitmqConfiguration;
+    }
+    
+    private void setRabbitmqConfiguration(RabbitmqConfiguration rabbitmqConfiguration)
+    {
+        assertArgumentNotNull(rabbitmqConfiguration, "rabbitmq configuration is must be requird.");
+        this.rabbitmqConfiguration = rabbitmqConfiguration;
+    }
+    
+    private HibernateTransactionManager hibernateTransactionManager()
+    {
+        return hibernateTransactionManager;
+    }
+    
+    private void setHibernateTransactionManager(HibernateTransactionManager hibernateTransactionManager)
+    {
+        assertArgumentNotNull(hibernateTransactionManager, "rabbitmq hibernateTransaction is must be requird.");
+        this.hibernateTransactionManager = hibernateTransactionManager;
+    }
+    
+    private ConsumedEventStore consumedEventStore()
+    {
+        return consumedEventStore;
+    }
+    
+    private void setConsumedEventStore(ConsumedEventStore consumedEventStore)
+    {
+        assertArgumentNotNull(consumedEventStore, "rabbitmq consumedEventStore is must be requird.");
+        this.consumedEventStore = consumedEventStore;
+    }
+    
 }

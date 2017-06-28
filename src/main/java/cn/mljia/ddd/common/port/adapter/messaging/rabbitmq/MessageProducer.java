@@ -17,6 +17,10 @@ package cn.mljia.ddd.common.port.adapter.messaging.rabbitmq;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cn.mljia.ddd.common.notification.Notification;
 import cn.mljia.ddd.common.notification.NotificationSerializer;
 import cn.mljia.ddd.common.port.adapter.messaging.MessageException;
@@ -32,6 +36,8 @@ import com.rabbitmq.client.MessageProperties;
  */
 public class MessageProducer {
 
+	private static Logger logger = LoggerFactory.getLogger(MessageProducer.class);
+	
     /** My brokerChannel, which is where I send messages. */
     private BrokerChannel brokerChannel;
 
@@ -84,9 +90,10 @@ public class MessageProducer {
      * @param aMessageParameters the MessageParameters
      * @return MessageProducer
      */
-    public MessageProducer send(List<Notification> notifications) {
+    public MessageProducer send(List<Notification> notifications) throws MessageException {
         try {
 //        	this.confirmSelect();
+        	String notificationIds="";
          	for(Notification aNotification :notifications){
        				MessageParameters aMessageParameters =
     		        MessageParameters.durableTextParameters(
@@ -103,11 +110,18 @@ public class MessageProducer {
 	                     this.brokerChannel().queueName(),
 	                     aMessageParameters.properties(),
 	                     notification.getBytes());
+	       		 notificationIds+=aNotification.notificationId()+",";
+         	}
+         	if(notifications!=null&&!notifications.isEmpty()){
+	         	logger.warn("send notifications size------>>>[{}]------typeName----->>>[{}]------notificationIds----->>>[{}]"
+	         			,new Object[]{notifications.size(),notifications.get(0).typeName(),notificationIds.substring(0, notificationIds.length()-1)});
          	}
             this.waitForConfirmsOrDie();
         } catch (IOException e) {
             throw new MessageException("Failed to send message to channel.", e);
-        }
+        } catch (IllegalArgumentException e) {
+        	throw new MessageException("Failed to send message to channel.", e);
+		}
         return this;
     }
     

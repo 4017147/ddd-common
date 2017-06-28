@@ -46,7 +46,7 @@ public class SpringJdbcEventStore implements EventStore
                 {
                     StoredEvent storedEvent =
                         new StoredEvent(rs.getString("tracker_name"), rs.getString("type_name"),
-                            rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"));
+                            rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"),rs.getInt("send_status"));
                     return storedEvent;
                 }
             });
@@ -68,14 +68,14 @@ public class SpringJdbcEventStore implements EventStore
             {
                 StoredEvent storedEvent =
                     new StoredEvent(rs.getString("tracker_name"), rs.getString("type_name"),
-                        rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"));
+                        rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"),rs.getInt("send_status"));
                 return storedEvent;
             }
         });
     }
     
     @Override
-    public List<StoredEvent> allStoredEventsSince(long aStoredEventId, String trackerName)
+    public List<StoredEvent> allStoredEventsSince(long aStoredEventId, String trackerName,Integer limit)
     {
         
         return jdbcTemplate.query("select * from tb_stored_event where tracker_name=? and  event_id > ? order by  event_id ",
@@ -89,7 +89,7 @@ public class SpringJdbcEventStore implements EventStore
                 {
                     StoredEvent storedEvent =
                         new StoredEvent(rs.getString("tracker_name"), rs.getString("type_name"),
-                            rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"));
+                            rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"),rs.getInt("send_status"));
                     return storedEvent;
                 }
             });
@@ -141,5 +141,31 @@ public class SpringJdbcEventStore implements EventStore
     {
         this.trackerName = trackerName;
     }
+
+	@Override
+	public Integer complete(Long[] eventIds) {
+		// TODO Auto-generated method stub
+		return jdbcTemplate.update("update tb_stored_event SET send_status =1  WHERE event_id IN(?)", eventIds);
+	}
+
+	@Override
+	public List<StoredEvent> compensationStoredEvents(long aStoredEventId,
+			String trackerName, Integer limit) {
+		 return jdbcTemplate.query("select * from tb_stored_event where tracker_name=? and  event_id < ? and send_status = 0 order by  event_id ",
+		            new Object[] {trackerName, aStoredEventId},
+		            new int[] {java.sql.Types.VARCHAR, java.sql.Types.INTEGER},
+		            new RowMapper<StoredEvent>()
+		            {
+		                @Override
+		                public StoredEvent mapRow(ResultSet rs, int rowNum)
+		                    throws SQLException
+		                {
+		                    StoredEvent storedEvent =
+		                        new StoredEvent(rs.getString("tracker_name"), rs.getString("type_name"),
+		                            rs.getDate("occurred_on"), rs.getString("event_body"), rs.getInt("event_id"),rs.getInt("send_status"));
+		                    return storedEvent;
+		                }
+		            });
+	}
     
 }

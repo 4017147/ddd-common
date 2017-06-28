@@ -101,13 +101,14 @@ public class InstantiationTracingProcessor implements ApplicationListener<Contex
         scheduledThreadPool = Executors.newScheduledThreadPool(DOMAIN_EVENTS.size());
         for (Map.Entry<String, Class<?>> event : DOMAIN_EVENTS.entrySet())
         {
-            scheduledThreadPool.scheduleAtFixedRate(new NotificationPublisherTimer(event.getKey(),
-                this.getNotificationApplicationService(), this.getLock(),
-                this.getCommonConfiguration().getDomainName(), this.messageProducer(event.getKey())),
-                1,
-                200,
-                TimeUnit.MILLISECONDS);
-            
+        	if(!"cn.mljia.ddd.common.domain.model.process.ProcessTimedOut".equals(event.getKey())){
+        		scheduledThreadPool.scheduleWithFixedDelay(new NotificationPublisherTimer(event.getKey(),
+                        this.getNotificationApplicationService(), this.getLock(),
+                        this.getCommonConfiguration().getDomainName(), this.messageProducer(event.getKey())),
+                        100,
+                        400,
+                        TimeUnit.MILLISECONDS);
+        	}
         }
     }
     
