@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>cn.mljia.ddd</groupId>
 	<artifactId>cn.mljia.ddd.common</artifactId>
-	<version>1.2.4-SNAPSHOT</version>
+	<version>1.2.5-SNAPSHOT</version>
 	<name>cn.mljia.ddd.common</name>
 	<description>cn.mljia.ddd.common</description>
 
